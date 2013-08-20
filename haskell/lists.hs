@@ -43,3 +43,14 @@ fact3 (a,b)		= all (fact1) (good_summands (a+b))
 fact4 (a,b)		= singleton' (filter (fact3) (good_factors (a*b)))
 fact5 (a,b)		= singleton' (filter (fact4) (good_summands (a+b)))
 result			= [(a,b) | a <- good_nums, b <- good_nums, a <= b, fact1 (a,b), fact2 (a,b), fact3 (a,b), fact4 (a,b), fact5 (a,b)]
+
+cprod [x]		= map (:[]) x
+cprod (x:xs)	= [y:ys | y <- x, ys <- cprod xs]
+
+foldr1' f [x,y]	= f x y 
+foldr1' f (x:xs)	= f x (foldr1' f xs)
+
+scanl' f a [x]		= a:(f a x)
+scanl' f a (x:xs)	= a:scanl' f (f a x) xs
+
+scanr' f a (x:xs)	= scanr f a xs:a
