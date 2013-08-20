@@ -1,0 +1,84 @@
+		go/src/test/Session.vim	/^imap 	 <Plug>SuperTabForward$/;"	m
+	go/src/test/Session.vim	/^imap  <Plug>SuperTabForward$/;"	m
+	go/src/test/Session.vim	/^imap  <Plug>SuperTabBackward$/;"	m
+	go/src/test/Session.vim	/^inoremap <expr>  omni#cpp#maycomplete#Complete()$/;"	m
+<	go/src/test/Session.vim	/^map < :tabn$/;"	m
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.9~svn20110310	//
+,	go/src/test/Session.vim	/^noremap , ;$/;"	m
+.	go/src/test/Session.vim	/^inoremap <expr> . omni#cpp#maycomplete#Dot()$/;"	m
+0	go/src/test/Session.vim	/^normal! 0$/;"	m
+09|	go/src/test/Session.vim	/^normal! 09|$/;"	m
+:	go/src/test/Session.vim	/^inoremap <expr> : omni#cpp#maycomplete#Scope()$/;"	m
+;	go/src/test/Session.vim	/^noremap ; :$/;"	m
+<C-Tab>	go/src/test/Session.vim	/^inoremap <C-Tab> 	$/;"	m
+<NL>	go/src/test/Session.vim	/^imap <NL> <Plug>IMAP_JumpForward$/;"	m
+<NL>	go/src/test/Session.vim	/^nmap <NL> <Plug>IMAP_JumpForward$/;"	m
+<NL>	go/src/test/Session.vim	/^vmap <NL> <Plug>IMAP_JumpForward$/;"	m
+<Plug>IMAP_DeleteAndJumpBack	go/src/test/Session.vim	/^vmap <silent> <Plug>IMAP_DeleteAndJumpBack "_<Del>i=IMAP_Jumpfunc('b', 0)$/;"	m
+<Plug>IMAP_DeleteAndJumpForward	go/src/test/Session.vim	/^vmap <silent> <Plug>IMAP_DeleteAndJumpForward "_<Del>i=IMAP_Jumpfunc('', 0)$/;"	m
+<Plug>IMAP_JumpBack	go/src/test/Session.vim	/^imap <silent> <Plug>IMAP_JumpBack =IMAP_Jumpfunc('b', 0)$/;"	m
+<Plug>IMAP_JumpBack	go/src/test/Session.vim	/^nmap <silent> <Plug>IMAP_JumpBack i=IMAP_Jumpfunc('b', 0)$/;"	m
+<Plug>IMAP_JumpBack	go/src/test/Session.vim	/^vmap <silent> <Plug>IMAP_JumpBack `<i=IMAP_Jumpfunc('b', 0)$/;"	m
+<Plug>IMAP_JumpForward	go/src/test/Session.vim	/^imap <silent> <Plug>IMAP_JumpForward =IMAP_Jumpfunc('', 0)$/;"	m
+<Plug>IMAP_JumpForward	go/src/test/Session.vim	/^nmap <silent> <Plug>IMAP_JumpForward i=IMAP_Jumpfunc('', 0)$/;"	m
+<Plug>IMAP_JumpForward	go/src/test/Session.vim	/^vmap <silent> <Plug>IMAP_JumpForward i=IMAP_Jumpfunc('', 0)$/;"	m
+<Plug>NetrwBrowseX	go/src/test/Session.vim	/^nnoremap <silent> <Plug>NetrwBrowseX :call netrw#NetrwBrowseX(expand("<cWORD>"),0)$/;"	m
+<S-Tab>	go/src/test/Session.vim	/^imap <S-Tab> <Plug>SuperTabBackward$/;"	m
+>	go/src/test/Session.vim	/^inoremap <expr> > omni#cpp#maycomplete#Arrow()$/;"	m
+>	go/src/test/Session.vim	/^map > :tabp$/;"	m
+CheckSeries	go/src/magic/magic.go	/^func (m *MagicSquare) CheckSeries () bool {$/;"	f
+CreateSquare	go/src/magic/magic.go	/^func (m *MagicSquare) CreateSquare() bool {$/;"	f
+GenSeries	go/src/magic/magic.go	/^func (m *MagicSquare) GenSeries() bool {$/;"	f
+MagicSquare	go/src/magic/magic.go	/^type MagicSquare struct {$/;"	t
+MagicSquare	magicsquare.cpp	/^	MagicSquare(ul n = 4, ul sum = 34)$/;"	f	class:MagicSquare
+MagicSquare	magicsquare.cpp	/^class MagicSquare$/;"	c	file:
+PrintSquare	go/src/magic/magic.go	/^func (m *MagicSquare) PrintSquare () {$/;"	f
+SessionLoad	go/src/test/Session.vim	/^let SessionLoad = 1$/;"	v
+\F	go/src/test/Session.vim	/^map <buffer> \\F :Drop fmt$/;"	m
+\f	go/src/test/Session.vim	/^map <buffer> \\f :Import fmt$/;"	m
+a	magicsquare.cpp	/^	ul a, d;$/;"	m	class:MagicSquare	file:
+check_series	magicsquare.cpp	/^bool MagicSquare::check_series()$/;"	f	class:MagicSquare
+copy_board	nqueens.cpp	/^ul* copy_board(int n, ul* board)$/;"	f
+create_series_square	magicsquare.cpp	/^bool MagicSquare::create_series_square()$/;"	f	class:MagicSquare
+create_square	magicsquare.cpp	/^bool MagicSquare::create_square()$/;"	f	class:MagicSquare
+create_square_numbers	magicsquare.cpp	/^void MagicSquare::create_square_numbers(ul numbers[])$/;"	f	class:MagicSquare
+create_truth_square	magicsquare.cpp	/^void MagicSquare::create_truth_square(bool square[])$/;"	f	class:MagicSquare
+d	magicsquare.cpp	/^	ul a, d;$/;"	m	class:MagicSquare	file:
+fill_board	nqueens.cpp	/^bool fill_board(int n, ul* board, ul *markboard, const int row = 0)$/;"	f
+find_first_unset	nqueens.cpp	/^int find_first_unset(ul i, int max_pos)$/;"	f
+find_sequence	magicsquare.cpp	/^bool MagicSquare::find_sequence()$/;"	f	class:MagicSquare
+gx	go/src/test/Session.vim	/^nmap gx <Plug>NetrwBrowseX$/;"	m
+magic	go/src/magic/magic.go	/^package magic$/;"	p
+main	gen_sym.cpp	/^int main()$/;"	f
+main	go/src/test/test.go	/^func main() {$/;"	f
+main	go/src/test/test.go	/^package main$/;"	p
+main	magicsquare.cpp	/^int main()$/;"	f
+main	nqueens.cpp	/^int main()$/;"	f
+n	magicsquare.cpp	/^	ul n, n2, sum;$/;"	m	class:MagicSquare	file:
+n2	magicsquare.cpp	/^	ul n, n2, sum;$/;"	m	class:MagicSquare	file:
+operator <<	magicsquare.cpp	/^ostream & operator << (ostream & out, const MagicSquare & square)$/;"	f
+print_board	nqueens.cpp	/^void print_board(const int n, ul* board, string label = "", ostream& out = cout)$/;"	f
+s:cpo_save	go/src/test/Session.vim	/^let s:cpo_save=&cpo$/;"	v
+s:l	go/src/test/Session.vim	/^let s:l = 13 - ((11 * winheight(0) + 10) \/ 20)$/;"	v
+s:l	go/src/test/Session.vim	/^let s:l = 36 - ((5 * winheight(0) + 10) \/ 20)$/;"	v
+s:l	go/src/test/Session.vim	/^let s:l = 74 - ((15 * winheight(0) + 10) \/ 20)$/;"	v
+s:so_save	go/src/test/Session.vim	/^let s:so_save = &so | let s:siso_save = &siso | set so=0 siso=0$/;"	v
+s:sx	go/src/test/Session.vim	/^let s:sx = expand("<sfile>:p:r")."x.vim"$/;"	v
+s:wipebuf	go/src/test/Session.vim	/^  let s:wipebuf = bufnr('%')$/;"	v
+setValues	magicsquare.cpp	/^	void setValues(ul n = 4, ul sum = 34)$/;"	f	class:MagicSquare
+set_marks	nqueens.cpp	/^bool set_marks(const short n, ul *markboard, const int row, const int col)$/;"	f
+square	go/src/test/test.go	/^func square(i, sum int) bool {$/;"	f
+square	magicsquare.cpp	/^	ul* square;$/;"	m	class:MagicSquare	file:
+sum	magicsquare.cpp	/^	ul n, n2, sum;$/;"	m	class:MagicSquare	file:
+test	go/src/test/test.go	/^func test(a []int, i int) {$/;"	f
+ul	magicsquare.cpp	/^typedef unsigned long long ul;$/;"	t	file:
+ul	nqueens.cpp	/^typedef unsigned long long ul;$/;"	t	file:
+ul1	nqueens.cpp	/^const ul ul1 = ul(1);$/;"	v
+w!!	go/src/test/Session.vim	/^cmap w!! w !sudo tee >\/dev\/null %$/;"	m
+zt	go/src/test/Session.vim	/^normal! zt$/;"	m
+~MagicSquare	magicsquare.cpp	/^	~MagicSquare() $/;"	f	class:MagicSquare
