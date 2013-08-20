@@ -1,0 +1,12 @@
+GNU gdb (GDB) 7.5.91.20130417-cvs-ubuntu
+Copyright (C) 2013 Free Software Foundation, Inc.
+License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.  Type "show copying"
+and "show warranty" for details.
+This GDB was configured as "x86_64-linux-gnu".
+For bug reporting instructions, please see:
+<http://www.gnu.org/software/gdb/bugs/>...
+Reading symbols from /home/bro3886/devel/nq...done.
+(gdb) 16
+(gdb) ^C(gdb) ^C(gdb) ^C(gdb) ^C(gdb) ^C(gdb) ^C(gdb) ^C(gdb) ^C(gdb) ^C(gdb) ^C(gdb) ^C(gdb) 
