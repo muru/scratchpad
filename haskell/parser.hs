@@ -3,7 +3,7 @@ import Data.Char
 type Parser symbol result = [symbol] -> [([symbol], result)]
 
 symbol :: Eq s => s -> Parser s s
---symbol a []		= []
+--symbol _ []		= []
 --symbol a (x:xs) = [(xs, a)] |  a == x]
 
 token :: Eq s => [s] -> Parser s [s]
@@ -76,6 +76,13 @@ p <. q = p <.> q <@ fst
 p .> q = p <.> q <@ snd
 
 parens :: Parser Char Tree
+--parens =	( 
+--				symbol '('
+--			<.>	parens 
+--			<.> symbol ')'
+--			<.> parens
+--			)				<@ (\(_, (x, (_, y))) -> Bin (x, y)
+--			<|> epsilon <@ const Nil
 parens	=	(open .> parens <. close) <.> parens <@ Bin
 		<|> succeed Nil
 
@@ -90,8 +97,13 @@ foldparens f e	= p
 						<|> succeed e
 
 many :: Parser s a -> Parser s [a]
-many p	= p <.> many p <@ list
-		<|> succeed []
-		where list (x, xs) = x:xs
+--many p	= p <.> many p <@ list
+--		<|> succeed []
+--		where list (x, xs) = x:xs
+-- Lambdas! Lambdas everywhere.
+many p	= p <.> many p <@ (\(x, xs) -> x:xs)
+		<|> epsilon <@ (\_ -> [])
 
-
+natural :: Parser Char Int
+natural = many digit <@ foldl f 0
+		where f a b = a * 10 + b

@@ -50,7 +50,9 @@ cprod (x:xs)	= [y:ys | y <- x, ys <- cprod xs]
 foldr1' f [x,y]	= f x y 
 foldr1' f (x:xs)	= f x (foldr1' f xs)
 
-scanl' f a [x]		= a:(f a x)
-scanl' f a (x:xs)	= a:scanl' f (f a x) xs
+scanl' f a [x]		= a:[(f a x)]
+scanl' f a (x:xs)	= a:(scanl' f (f a x) xs)
 
-scanr' f a (x:xs)	= scanr f a xs:a
+scanr' f a [x]		= (f a x):[a]
+scanr' f a (x:xs)	= (f h x):(h:g)
+					where (h:g) = scanr' f a xs
