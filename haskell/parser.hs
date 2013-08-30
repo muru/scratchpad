@@ -189,7 +189,7 @@ p <?@ (no, yes) = p <@ f
 
 -- Ex 15
 integer :: Parser Char Int
-integer = (((symbol '-' <?) <?@ ((+), (-))) <.> natural) <@ map (\(op, y) -> 0 `op` y)
+integer = (((symbol '-' <?) <?@ ((+), (\_ -> (-)))) <.> natural) <@ (\(op, y) -> 0 `op` y)
 		--where	g (x, n)	| x == '+' = n
 		--					| x == '-' = 0 - n
 
@@ -216,7 +216,15 @@ fixed = (((integer <@ fromIntegral)
 						| x < 0 = x - y
 
 
---chainr'' p s = q
---			 where q =	p <.> (((s <.> q) <?) <?@ (id, ap2))
---						<@ flip ap
+--ap1 (y, op) = (y `op`)
+--ap2 (op, y) = (`op` y)
+--chainr p s = ((p <.> s) <*) <.> p <@ uncurry (flip (foldr ap1))
+chainr' :: Parser s a -> Parser s (a -> a -> a) -> Parser s a
+chainr' p s = q
+			where q = p <.> (((s <.> q) <?) <?@ (id, ap2))
+						<@ ap1
 				
+chainl' :: Parser s a -> Parser s (a -> a -> a) -> Parser s a
+chainl' p s = q
+			where q = (((p <.> s) <?) <?@ (id, ap1)) <.> p
+						<@ ap2
