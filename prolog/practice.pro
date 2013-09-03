@@ -16,5 +16,6 @@ elem(X, [_|T]) :- elem(X, T).
 twice(X, [X|T]) :- elem(X, T).
 twice(X, [_|T]) :- twice(X, T).
 
-
-
+binvalue([], 0).
+binvalue([1|T], X) :- length(T, L), Y is 2**L, binvalue(T, X1), X is X1 + Y.
+binvalue([0|T], X) :- binvalue(T, X).

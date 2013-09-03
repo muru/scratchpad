@@ -228,3 +228,15 @@ chainl' :: Parser s a -> Parser s (a -> a -> a) -> Parser s a
 chainl' p s = q
 			where q = (((p <.> s) <?) <?@ (id, ap1)) <.> p
 						<@ ap2
+
+first :: Parser a b -> Parser a b
+first p xs	| null r	= []
+			| otherwise = [head r]
+			where r		= p xs
+
+greedy	= first . many
+greedy1 = first . many1
+
+compulsion = first . option
+
+
