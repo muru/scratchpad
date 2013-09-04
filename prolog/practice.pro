@@ -19,3 +19,9 @@ twice(X, [_|T]) :- twice(X, T).
 binvalue([], 0).
 binvalue([1|T], X) :- length(T, L), Y is 2**L, binvalue(T, X1), X is X1 + Y.
 binvalue([0|T], X) :- binvalue(T, X).
+
+enum(0).
+enum(X) :- enum(X1), X is X1 + 1.
+fact(0, 1).
+fact(X, Y) :- nonvar(X), X > 0, X1 is X - 1, fact(X1, Y1), Y is X*Y1.
+fact(X, Y) :- var(X), Y >= 1, enum(X1), fact(X1, Y), X is X1.

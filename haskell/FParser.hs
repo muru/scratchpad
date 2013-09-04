@@ -1,3 +1,5 @@
+module FParser where
+
 import Data.Char
 
 type Parser symbol result = [symbol] -> [([symbol], result)]
@@ -62,7 +64,7 @@ some :: Parser s a -> DeterministicParser s a
 some p = snd . head . just p
 
 data Tree	= Nil
-			| Bin (Tree, Tree)
+			| Bin (Tree, Tree) deriving Show
 
 open_r	= symbol '('
 close_r	= symbol ')'
@@ -219,15 +221,18 @@ fixed = (((integer <@ fromIntegral)
 --ap1 (y, op) = (y `op`)
 --ap2 (op, y) = (`op` y)
 --chainr p s = ((p <.> s) <*) <.> p <@ uncurry (flip (foldr ap1))
+
+ap3 (y, op) = (op y)
+ap4 (op, y) = (op y)
 chainr' :: Parser s a -> Parser s (a -> a -> a) -> Parser s a
 chainr' p s = q
 			where q = p <.> (((s <.> q) <?) <?@ (id, ap2))
-						<@ ap1
-				
+						<@ ap3
+
 chainl' :: Parser s a -> Parser s (a -> a -> a) -> Parser s a
 chainl' p s = q
-			where q = (((p <.> s) <?) <?@ (id, ap1)) <.> p
-						<@ ap2
+			where q = (((q <.> s) <?) <?@ (id, ap1)) <.> p
+						<@ ap4
 
 first :: Parser a b -> Parser a b
 first p xs	| null r	= []
