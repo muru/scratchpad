@@ -15,41 +15,58 @@ data Exp		= I Int | V Var | B Bool | MNil |
 
 type ExpParser = Parser Char Exp
 
-name = (satisfy isStartWord) <.> (satisfy (isWord) <*) 
+name = first (satisfy isStartWord <:.> (satisfy (isWord) <*))
+isWord x = isAlphaNum x || (x ==  '_')
+isStartWord x = isAlpha x || (x ==  '_')
+
+funargs [x] = x
+funargs (x:xs) = App x (funargs xs)
 
 intlit :: ExpParser
 intlit = integer <@ I
 
 boollit :: ExpParser
 boollit	= ((token "True" <|> token "False") <@ f)
-		where f x | x == "True"	= B True
+		where f x	| x == "True"	= B True
 					| x == "False"	= B False
 
 mnil :: ExpParser
 mnil	= token "[]" <@ f
 		where f "[]" = MNil
 
-isWord x = isAlphaNum x || (x ==  '_')
-isStartWord x = isAlpha x || (x ==  '_')
-var :: ExpParser
-var = name <@ (\ (x, y) ->  V (x:y))
+variable :: ExpParser
+variable = name <@ V -- <@ (\ (x, y) ->  V (x:y))
 
 fname :: ExpParser
-fname = name <@ (\ (x, y) -> Fname (x:y))
+fname = name <@ Fname -- (\ (x, y) -> Fname (x:y))
 
 constant = intlit <|> boollit <|> mnil
 
-operator x = token x <@ op
-			where	op "+" = (+)
-					op "-" = (-)
+infixopl :: [Char] -> ExpParser 
+infixopl x = term <.> spaces (token x) <.> expr 
+				<@ optofname
+			where optofname (x,(y,z)) = App (App (Fname y) x) z
 
-expression	= constant <|> var
-			<|> (expression <.> token "+" <.> expression) <@ optofname
-			<|> (expression <.> token "-" <.> expression)
-			<|> (fname <.> (expression <*))
-			<|> (expression <.> token "==" <.> expression)
-			where optofname (x,(y,z)) =  App (Fname y) (App x z)
-			
+--infixopr :: [Char] -> ExpParser 
+--infixopr x = term <.> spaces (token x) <.> term 
+--				<@ optofname
+--			where optofname (x,(y,z)) = App (App (Fname z) x) y
 
+function :: ExpParser
+function = fname <.> (expr <*)
+             <@ (\ (x, y) ->  App x (funargs y))
 
+term =	spaces(	
+			constant 
+		<|> variable
+		<|> function
+		<|> parenthesized expr
+		)
+expr =	spaces (
+			term
+		<|> infixopl "+"
+		<|> infixopl "-"
+		<|> infixopl "=="
+		<|> infixopl ":"
+		)
 

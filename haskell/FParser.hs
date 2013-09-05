@@ -151,15 +151,18 @@ normalList 	= bracketed . commaList . spaces
 
 -- Ex 12
 sequence' :: [Parser s a] -> Parser s [a]
-sequence' [] = succeed []
-sequence' (p:ps) = p <:.> sequence' ps
+--sequence' [] = succeed []
+--sequence' (p:ps) = p <:.> sequence' ps
+sequence' = foldr (<:.>) (succeed [])
 
 choice :: [Parser s a] -> Parser s a
-choice [] = fail'
-choice (p:ps) = p <|> choice ps
+--choice [] = fail'
+--choice (p:ps) = p <|> choice ps
+choice = foldr (<|>) fail'
 
 -- Ex 13
-token k = sequence' (map symbol k)
+--token k = sequence' (map symbol k)
+token = sequence' . map symbol
 
 ap2 (op, y) = (`op` y)
 
@@ -191,9 +194,14 @@ p <?@ (no, yes) = p <@ f
 
 -- Ex 15
 integer :: Parser Char Int
-integer = (((symbol '-' <?) <?@ ((+), (\_ -> (-)))) <.> natural) <@ (\(op, y) -> 0 `op` y)
+--integer = ((symbol '-' <?) <?@ ((+), (\_ -> (-)))) 
+--			<.> natural 
+--		<@ (\(op, y) -> 0 `op` y)
 		--where	g (x, n)	| x == '+' = n
 		--					| x == '-' = 0 - n
+integer = ((symbol '-' <?) <?@ (id, const negate))
+			<.> natural
+		<@ (\(op, y) ->  op y) 
 
 frac :: Parser Char Float
 frac  = (digit <*) <@ foldr f 0.0 
@@ -243,5 +251,10 @@ greedy	= first . many
 greedy1 = first . many1
 
 compulsion = first . option
+
+type Op a = (Char, a -> a -> a)
+gen :: [Op a] ->  Parser Char a ->  Parser Char a
+gen ops p = chainr p (choice (map f ops))
+		where f (t, e) = symbol t <@ const e
 
 
