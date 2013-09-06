@@ -257,4 +257,4 @@ gen :: [Op a] ->  Parser Char a ->  Parser Char a
 gen ops p = chainr p (choice (map f ops))
 		where f (t, e) = symbol t <@ const e
 
-
+token' x  = spaces (token x)
