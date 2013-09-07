@@ -17,7 +17,7 @@ type ExpParser = Parser Char Exp
 
 tuple2Exp (x, y) = App x y
 
-name = first (satisfy isStartWord <:.> (satisfy (isWord) <*))
+name = spaces (first (satisfy isStartWord <:.> (satisfy (isWord) <*)))
 isWord x = isAlphaNum x || (x ==  '_')
 isStartWord x = isAlpha x || (x ==  '_')
 
@@ -42,11 +42,11 @@ constant = intlit <|> boollit <|> mnil
 variable :: ExpParser
 variable = name <@ V -- <@ (\ (x, y) ->  V (x:y))
 
---fname :: ExpParser
---fname = name <@ Fname -- (\ (x, y) -> Fname (x:y))
+fname :: ExpParser
+fname = name <@ Fname -- (\ (x, y) -> Fname (x:y))
 
 function :: ExpParser
-function = (name <@ Fname) <.> (expr <*)
+function = fname <.> (expr <*)
              <@ (\ (x, y) ->  if length y == 0 then x else funargs (x:y))
 
 infixopl :: [Char] -> ExpParser 
@@ -82,3 +82,15 @@ expr =	spaces (
 		<|> infixopl ":"
 		)
 
+args :: Parser Char [[ Char ]]
+args	= name <:.> (name <*) <|> succeed []
+
+fundef :: Parser Char Fundef
+fundef	= (name <.> args <.> token' "=" .> expr) 
+			<@ \ (f, (as, e)) ->  Fun f as e
+
+funs :: Parser Char [ Fundef ]
+funs	= fundef <:.> funs <|> succeed []
+
+program :: Parser Char Program
+program = funs <.> expr <@ \ (fs, e) ->  Prog fs e
