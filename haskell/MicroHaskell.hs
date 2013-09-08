@@ -1,96 +1,141 @@
 module MicroHaskell where
 
-import FParser
+import FParser hiding (Nil)
 import Data.Char
 
-type Fname = String
-type Var = String
+type Fname		= String
+type Var		= String
 
 data Program	= Prog [Fundef] Exp deriving Show
 data Fundef		= Fun String [String] Exp deriving Show
-data Exp		= I Int | V Var | B Bool | MNil |
+data Exp		= I Int | V Var | B Bool | Nil |
 				  Fname String |
 				  App Exp Exp deriving Show
 				  
+type ExpParser	= Parser Char Exp
 
-type ExpParser = Parser Char Exp
+keywords = ["if",
+			"then",
+			"else",
+			"car",
+			"cdr",
+			"null"]
 
-tuple2Exp (x, y) = App x y
+----------------------- Helper functions --------------------
+pair2Exp :: (Exp, Exp) -> Exp
+pair2Exp (x, y) = App x y
 
-name = spaces (first (satisfy isStartWord <:.> (satisfy (isWord) <*)))
-isWord x = isAlphaNum x || (x ==  '_')
-isStartWord x = isAlpha x || (x ==  '_')
+isWord, isStartWord :: Char -> Bool
+isWord x		= isAlphaNum x || (x ==  '_')
+isStartWord x	= isAlpha x || (x ==  '_')
+
+isKeyword :: String -> Bool
+isKeyword x		= x `elem` keywords
+
+word, name :: Parser Char [ Char ]
+word = (satisfy isStartWord 
+				<:.> (satisfy (isWord) <*))
+name = spaces (first word)
 
 funargs :: [Exp] -> Exp
-funargs [x] = x
-funargs (x:xs) = App x (funargs xs)
+funargs [x]		= x
+funargs (x:xs)	= foldl (\ x y -> App x y) x xs
 
-intlit :: ExpParser
-intlit = integer <@ I
+optofun :: [Char] -> Exp -> Exp -> Exp
+optofun f x y = App (App (Fname f) x) y
 
-boollit :: ExpParser
-boollit	= ((token' "True" <|> token' "False") <@ f)
-		where f x	| x == "True"	= B True
-					| x == "False"	= B False
+cons = optofun "cons"
 
-mnil :: ExpParser
-mnil	= token' "[]" <@ f
-		where f "[]" = MNil
-
-constant = intlit <|> boollit <|> mnil
-
-variable :: ExpParser
-variable = name <@ V -- <@ (\ (x, y) ->  V (x:y))
-
-fname :: ExpParser
-fname = name <@ Fname -- (\ (x, y) -> Fname (x:y))
-
-function :: ExpParser
-function = fname <.> (expr <*)
-             <@ (\ (x, y) ->  if length y == 0 then x else funargs (x:y))
-
-infixopl :: [Char] -> ExpParser 
-infixopl x = term <.> token' x <.> expr 
-				<@ optofname
-			where optofname (x,(y,z)) = App (Fname y) (App  x z)
-
---infixopr :: [Char] -> ExpParser 
---infixopr x = term <.> token' x <.> term 
---				<@ optofname
---			where optofname (x,(y,z)) = App (App (Fname z) x) y
-
-ifstmt = ((token' "if" .> expr 
-				<@ (\ y ->  App (Fname "If") y))
-		<.> token' "then" .> expr 
-				<@ tuple2Exp)
-		<.> token' "else" .> expr
-				<@ tuple2Exp
-		
-
-term =	spaces(	
-			constant 
-		<|> variable
-		<|> ifstmt
-		<|> function
-		<|> parenthesized expr
-		)
-expr =	spaces (
-			term
-		<|> infixopl "+"
-		<|> infixopl "-"
-		<|> infixopl "=="
-		<|> infixopl ":"
-		)
+addis	= [ ("+", optofun "+"),
+			("-", optofun "-")]
+multis	= [ ("*", optofun "*"),
+			("/", optofun "/")]
 
 args :: Parser Char [[ Char ]]
 args	= name <:.> (name <*) <|> succeed []
 
+newlines :: Parser Char [ Char ]
+newlines = spaces (symbol '\n' <*)
+-------------------------------------------------------------
+-------------------------------------------------------------
+
+---------------------- Constant Terms -----------------------
+intlit, boollit, nil, constant :: ExpParser
+intlit	= integer <@ I
+
+boollit	= ((token' "True" <|> token' "False") <@ f)
+		where f x	| x == "True"	= B True
+					| x == "False"	= B False
+
+nil	= token' "[" <.> token' "]" <@ f
+		where f _ = Nil
+
+constant = intlit <|> boollit <|> nil
+-------------------------------------------------------------
+-------------------------------------------------------------
+
+------------------------- User terms ------------------------
+variable, fname :: ExpParser
+variable = name <@ V 
+
+fname = name <@ Fname 
+-------------------------------------------------------------
+-------------------------------------------------------------
+
+-------------------- Grammar Constructs ---------------------
+function, ifstmt :: ExpParser
+function = fname <.> (term <*)
+             <@ (\ (x, y) ->  if length y == 0 then x 
+								else funargs (x:y))
+
+ifstmt = ((token' "if" .> expr 
+				<@ (\ y ->  App (Fname "If") y))
+		<.> token' "then" .> expr 
+				<@ pair2Exp)
+		<.> token' "else" .> expr
+				<@ pair2Exp
+
+car, cdr, nul :: ExpParser
+car = token' "car" .> term <@ (\ x -> App (Fname "car") x)
+cdr = token' "cdr" .> term <@ (\ x -> App (Fname "cdr") x)
+nul = token' "null" .> term <@ (\ x -> App (Fname "null") x)
+
+term, expr :: ExpParser
+term =	spaces(	
+			constant 
+		<|> variable
+		<|> ifstmt
+		<|> car
+		<|> cdr
+		<|> nul
+		<|> function
+		<|> ((normalList expr) <@ foldr cons Nil)
+		<|> parenthesized expr
+		)
+
+expr = gen term [	('r', [("==", optofun "==")]),
+					('r', [(":", cons)]),
+					('l', addis),
+					('l', multis)
+				] <. symbol '\n'
+
 fundef :: Parser Char Fundef
-fundef	= (name <.> args <.> token' "=" .> expr) 
+fundef	= (name <.> args <.> token' "=" .> expr <. symbol '\n') 
 			<@ \ (f, (as, e)) ->  Fun f as e
 
 funs :: Parser Char [ Fundef ]
-funs	= fundef <:.> funs <|> succeed []
+funs	= fundef <:.> symbol '\n' .> funs <|> succeed []
 
 program :: Parser Char Program
-program = funs <.> expr <@ \ (fs, e) ->  Prog fs e
+program = (fundef <*) <.> expr <@ \ (fs, e) ->  Prog fs e
+
+----------------------- Parser API -------------------------
+progtotext (Prog fs e) = map show fs ++ [show e]
+
+parse x = progtotext (some program x) 
+
+main = do 
+	input <- readFile "pfile"
+	print input
+
+

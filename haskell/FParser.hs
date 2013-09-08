@@ -145,7 +145,7 @@ listOf :: Parser s a -> Parser s b -> Parser s [a]
 listOf p s = p <:.> ((s .> p) <*)  <|> succeed []
 
 commaList, normalList :: Parser Char a -> Parser Char [a]
-commaList p	= listOf p (symbol ',')
+commaList p	= listOf p (token' ",")
 
 normalList 	= bracketed . commaList . spaces
 
@@ -237,10 +237,10 @@ chainr' p s = q
 			where q = p <.> (((s <.> q) <?) <?@ (id, ap2))
 						<@ ap3
 
-chainl' :: Parser s a -> Parser s (a -> a -> a) -> Parser s a
-chainl' p s = q
-			where q = (((q <.> s) <?) <?@ (id, ap1)) <.> p
-						<@ ap4
+--chainl' :: Parser s a -> Parser s (a -> a -> a) -> Parser s a
+--chainl' p s = q
+--			where q = (((q <.> s) <?) <?@ (id, ap1)) <.> p
+--						<@ ap4
 
 first :: Parser a b -> Parser a b
 first p xs	| null r	= []
@@ -252,9 +252,20 @@ greedy1 = first . many1
 
 compulsion = first . option
 
-type Op a = (Char, a -> a -> a)
-gen :: [Op a] ->  Parser Char a ->  Parser Char a
-gen ops p = chainr p (choice (map f ops))
-		where f (t, e) = symbol t <@ const e
+type Op a = ([Char], a -> a -> a)
+genl :: [Op a] ->  Parser Char a ->  Parser Char a
+genl ops p = chainl p (choice (map f ops))
+		where f (t, e) = token' t <@ const e
+
+genop :: (Char, [Op a]) -> Parser Char a -> Parser Char a
+genop (a, op) p	= 
+		chain p (choice (map 
+					(\ (t, e)-> token' t <@ const e) op))  
+			where	
+				chain	| a == 'r' = chainr
+						| a == 'l' = chainl
+
+gen :: Parser Char a -> [(Char, [Op a])] -> Parser Char a
+gen = foldr genop
 
 token' x  = spaces (token x)
