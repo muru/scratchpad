@@ -264,6 +264,7 @@ genop (a, op) p	=
 			where	
 				chain	| a == 'r' = chainr
 						| a == 'l' = chainl
+						| a == 'i' = \ pr s -> pr <|> (pr <.> s <.> pr <@ \ (a, (f, b)) -> f a b)
 
 gen :: Parser Char a -> [(Char, [Op a])] -> Parser Char a
 gen = foldr genop

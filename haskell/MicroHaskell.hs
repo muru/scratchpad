@@ -1,4 +1,5 @@
-module MicroHaskell where
+--module MicroHaskell where
+module Main where
 
 import FParser hiding (Nil)
 import Data.Char
@@ -29,13 +30,13 @@ isWord, isStartWord :: Char -> Bool
 isWord x		= isAlphaNum x || (x ==  '_')
 isStartWord x	= isAlpha x || (x ==  '_')
 
-isKeyword :: String -> Bool
+isKeyword :: [ Char ] -> Bool
 isKeyword x		= x `elem` keywords
 
 word, name :: Parser Char [ Char ]
-word = (satisfy isStartWord 
-				<:.> (satisfy (isWord) <*))
-name = spaces (first word)
+word = (satisfy isStartWord <:.> (satisfy (isWord) <*))
+name x = [(a, b) |	(a, b) <- (spaces (first word) x), 
+					not (isKeyword b)]
 
 funargs :: [Exp] -> Exp
 funargs [x]		= x
@@ -44,18 +45,11 @@ funargs (x:xs)	= foldl (\ x y -> App x y) x xs
 optofun :: [Char] -> Exp -> Exp -> Exp
 optofun f x y = App (App (Fname f) x) y
 
-cons = optofun "cons"
-
-addis	= [ ("+", optofun "+"),
-			("-", optofun "-")]
-multis	= [ ("*", optofun "*"),
-			("/", optofun "/")]
-
 args :: Parser Char [[ Char ]]
 args	= name <:.> (name <*) <|> succeed []
 
 newlines :: Parser Char [ Char ]
-newlines = spaces (symbol '\n' <*)
+newlines = (spaces (symbol '\n') <*)
 -------------------------------------------------------------
 -------------------------------------------------------------
 
@@ -70,7 +64,7 @@ boollit	= ((token' "True" <|> token' "False") <@ f)
 nil	= token' "[" <.> token' "]" <@ f
 		where f _ = Nil
 
-constant = intlit <|> boollit <|> nil
+constant = first (intlit <|> boollit <|> nil)
 -------------------------------------------------------------
 -------------------------------------------------------------
 
@@ -83,6 +77,13 @@ fname = name <@ Fname
 -------------------------------------------------------------
 
 -------------------- Grammar Constructs ---------------------
+cons = optofun "cons"
+
+addis	= [ ("+", optofun "+"),
+			("-", optofun "-")]
+multis	= [ ("*", optofun "*"),
+			("/", optofun "/")]
+
 function, ifstmt :: ExpParser
 function = fname <.> (term <*)
              <@ (\ (x, y) ->  if length y == 0 then x 
@@ -113,29 +114,31 @@ term =	spaces(
 		<|> parenthesized expr
 		)
 
-expr = gen term [	('r', [("==", optofun "==")]),
+expr = gen term [	('i', [("==", optofun "==")]),
 					('r', [(":", cons)]),
 					('l', addis),
 					('l', multis)
-				] <. symbol '\n'
+				]
 
 fundef :: Parser Char Fundef
-fundef	= (name <.> args <.> token' "=" .> expr <. symbol '\n') 
+fundef	= (name <.> args <.> token' "=" .> expr) 
 			<@ \ (f, (as, e)) ->  Fun f as e
 
 funs :: Parser Char [ Fundef ]
-funs	= fundef <:.> symbol '\n' .> funs <|> succeed []
+funs = (listOf fundef newlines) <. token' "\n"
 
 program :: Parser Char Program
-program = (fundef <*) <.> expr <@ \ (fs, e) ->  Prog fs e
+program = funs <.> expr <. newlines <@ \ (fs, e) ->  Prog fs e
 
------------------------ Parser API -------------------------
-progtotext (Prog fs e) = map show fs ++ [show e]
+----------------------- Parser output -------------------------
 
-parse x = progtotext (some program x) 
+ptext (Prog fs e) = unlines ((map show fs) ++ [show e])
+
+parse x = ptext (some program x) 
 
 main = do 
 	input <- readFile "pfile"
-	print input
-
+	let
+		prog = parse input
+	putStr prog
 
