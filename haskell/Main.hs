@@ -171,7 +171,7 @@ token' x  = spaces (token x)
 -------------------------------------------------------------
 -------------------------------------------------------------
 
-
+------------------------- MicroHaskell ----------------------
 type Fname		= String
 type Var		= String
 
@@ -285,7 +285,7 @@ term =	spaces(
 
 expr = gen term [	('i', [("==", optofun "==")]),
 					('r', [(":", cons)]),
-					('l', addis))
+					('l', addis)
 				]
 
 fundef :: Parser Char Fundef
@@ -293,7 +293,7 @@ fundef	= (name <.> args <.> token' "=" .> expr)
 			<@ \ (f, (as, e)) ->  Fun f as e
 
 funs :: Parser Char [ Fundef ]
-funs = (listOf fundef newlines) <. token' "\n"
+funs = (listOf fundef newlines) <. (token' "\n" <*)
 
 program :: Parser Char Program
 program = funs <.> expr <. newlines 

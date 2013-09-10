@@ -1,0 +1,4 @@
+append xs ys = if (null xs) then ys else (car xs:(append (cdr xs) ys))
+reverse xs = if (null xs) then xs else (append (reverse (cdr xs)) (car xs))
+reverse [4,5]
+
