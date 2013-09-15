@@ -11,12 +11,12 @@ nqueens n = queens n
 													 abs(n-n1) /= abs(pos-pos1)
 
 powers n	=	[n^i | i <- [0..]]
-
-f [] (a,b)		= a + b
-f ('(':s) (a,b)	= f s (a, b + 1)
-f (')':s) (a,b)	| b > 1 = f s (a, b - 1)
-				| otherwise = f s (a + 1, b)
-errno s			= f s (0,0)
+powers' n	= 1:[n*x | x <- powers' n]
+count [] (a,b)		= a + b
+count ('(':s) (a,b)	= count s (a, b + 1)
+count (')':s) (a,b)	| b > 0 = count s (a, b - 1)
+					| otherwise = count s (a + 1, b)
+errno s				= count s (0,0)
 
 hof a b c []	= b
 hof a b c (x:xs) = c (a x) (hof a b c xs)
@@ -27,7 +27,7 @@ map' f xs		= hof f [] (:) xs
 foldr' f r xs	= hof id' r f xs
 reverse' xs		= hof id' [] f xs
 				where f a b = b ++ [a]
-takewhile' p xs = hof id' [] f xs
+takewhile p xs	= hof id' [] f xs
 				where f a b | p a = a:b
 							| otherwise = []
 
@@ -56,3 +56,26 @@ scanl' f a (x:xs)	= a:(scanl' f (f a x) xs)
 scanr' f a [x]		= (f a x):[a]
 scanr' f a (x:xs)	= (f h x):(h:g)
 					where (h:g) = scanr' f a xs
+
+lcs _ [] = []
+lcs [] _ =  []
+lcs a@(x:xs) b@(y:ys)	| x == y = x:lcs xs ys
+						| otherwise = longest (lcs xs b) (lcs a ys)
+longest a b	| length a > length b = a
+			| otherwise = b
+
+connect x y = lcs x y 
+
+type Node	= Int
+type Graph	= [(Node, Node)]
+type Path	= [Node]
+
+makepath :: Node -> Graph -> [Path]
+makepath n g = [b:bs | (a, b)<- g, a == n, bs <- (makepath b g')]
+			where g' = filter (\ (a, b) -> (b /= n)) g
+
+summands :: Int -> [[Int]]
+summands 0 = [[]]
+summands n = [a:as | a <- [1..n], as <- (summands (n - a))]
+
+
