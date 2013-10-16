@@ -1,4 +1,6 @@
-import parser2
+import Parser2
+import Data.List
+import Data.Maybe
 
 type Code = [Instn]
 
@@ -37,62 +39,73 @@ instance Show Instn where
 	show STOP				= "    STOP" ++ "\n"
 
 gencpgm :: Program -> Code
-gencpgm (Prog fs e) = PUSHGLOBAL "MAIN" : EVAL : PRINT : foldr gencfun (gencfun (Fun "MAIN" [] e) []) fs
+gencpgm (Prog fs e) = foldr gencfun (gencmain e) fs
 
 gencfun :: Fundef -> Code -> Code
 gencfun (Fun fname args body) code	= GLOBSTART fname (length args) : 
-										evalexp body s d 
-											(UPDATE (length args + 1) : 
-												if (length args) == 0 then code else (POP (length args) : code)
-										where s name = elemIndex name args
+										expinst body s (length args) 
+											(UPDATE (length args + 1) : unwind_pop args code)
+	where	s name = fromJust (elemIndex name args) + 1
+unwind_pop :: [String] -> Code -> Code
+unwind_pop [] code = UNWIND : code
+unwind_pop args code = POP (length args) : UNWIND : code
 
-gencexp :: Exp ->  (Var -> Int) -> Int -> Code
-gencexp e s d = expinst e s d [UPDATE (d+1), POP d, UNWIND]
+gencmain :: Exp -> Code
+gencmain e = LABEL "MAIN" : expinst e (\x -> 0) 0 (EVAL : PRINT : STOP : builtins)
 
 expinst :: Exp ->  (Var -> Int) -> Int -> Code -> Code
-expinst e s d code	| e == App e1 e2 = consinst e2 s d : consinst e1 s (d + 1) : MKAP : code
-					| otherwise = f e : code
-					where f e	| e == I i		= PUSHINT i
-								| e == B b		= PUSHBOOL b
-								| e == Nil		= PUSHNIL
-								| e == V v		= PUSH (d - s v)
-								| e == Fname f	= PUSHGLOBAL f
+expinst (App e1 e2) s d code = expinst e2 s d (expinst e1 s (d + 1) (MKAP : code))
+expinst (I i) s d code = PUSHINT i : code
+expinst (B b) s d code = PUSHBOOL b : code
+expinst (V v) s d code = PUSH (d - s v) : code
+expinst Nil s d code = PUSHNIL : code
+expinst (Fname f) s d code = PUSHGLOBAL f : code
 
--- evalexp e s d code | e == App e1 e2 = evalexp e2 : evalexp e1 : code
+builtins :: Code
+builtins = concat (map builtin ["cons", "car", "if", "+", "-", "*", "=="])
 
-builtin "not"	= [GLOBSTART "not", EVAL, NEG, UPDATE 1, RETURN]
-builtin "cons"	= [GLOBSTART "cons", CONS, UPDATE 1, RETURN]
-builtin "car"	= [GLOBSTART "car", EVAL, HEAD, EVAL, UPDATE 1, UNWIND]
-builtin "cdr"	= [GLOBSTART "cdr", 
-builtin "if"	= [	GLOBSTART "if", 
+builtin :: String -> Code
+--builtin "not"	= [GLOBSTART "not", EVAL, NEG, UPDATE 1, RETURN]
+builtin "cons"	= [GLOBSTART "cons" 2, CONS, UPDATE 1, RETURN]
+builtin "car"	= [GLOBSTART "car" 1, EVAL, HEAD, EVAL, UPDATE 1, UNWIND]
+builtin "if"	= [	GLOBSTART "if" 3, 
 					PUSH 0,
 					EVAL,
-					JFALSE L1,
+					JFALSE "1",
 					PUSH 1,
-					JUMP L2,
-					LABEL L1,
+					JUMP "2",
+					LABEL "1",
 					PUSH 2,
-					LABEL L2,
+					LABEL "2",
 					EVAL,
 					UPDATE 4,
 					POP 3,
-					UNWIND
-				  ]
+					UNWIND ]
 builtin "+" = binarybuiltin "+"
 builtin "-" = binarybuiltin "-"
 builtin "*" = binarybuiltin "*"
 builtin "==" = binarybuiltin "=="
-binarybuiltin f = [ PUSHGLOBAL f,
+
+binarybuiltin :: String -> Code
+binarybuiltin f = [ GLOBSTART f 2,
 					EVAL,
 					PUSH 1,
 					EVAL,
-					command f
+					command f,
 					UPDATE 3,
 					POP 2,
-					UNWIND
-				  ]
-				  where command f "+" = ADD
-						command f "-" = SUB
-						command f "*" = MUL
-						command f "==" = EQU
-					
+					UNWIND ]
+
+command "+" = ADD
+command "-" = SUB
+command "*" = MUL
+command "==" = EQU
+
+main = do
+	input <- readFile "pfile"
+	let
+		program = parse input
+	let
+		code = gencpgm program
+    --
+	print code

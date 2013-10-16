@@ -1,3 +1,4 @@
+module Parser2 where
 import Data.Char
 
 type Parser symbol result = [symbol]->[([symbol],result)]
@@ -207,10 +208,3 @@ fundefCorrectExp par (App e1 e2) = App (fundefCorrectExp par e1) (fundefCorrectE
 fundefCorrectExp par (Fname argname) | argname `elem` par = V argname
                                      | otherwise = Fname argname
 fundefCorrectExp _ x = x    
-
-main = do
-  input <- readFile "pfile"
-  let
-    program = parse input
-    --
-  print program
