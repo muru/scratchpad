@@ -1,3 +1,6 @@
 *.hi
 *.o
+.*.swp
+.metadata/*
+*.mp3
 

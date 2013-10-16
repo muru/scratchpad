@@ -1,5 +1,0 @@
-div' a b| a < b = (0,a)
-		| otherwise = f (div'(div a 2) b)
-			where	f (x,y) | 2*y >= b = f(x+1, 2*y-b)
-							| odd a = (2*x, 2*y+1)
-							| otherwise = f (2*x,2*y)

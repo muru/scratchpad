@@ -250,6 +250,9 @@ cons 	= optofun "cons"
 addis	= [ ("+", optofun "+"),
 			("-", optofun "-")]
 
+mulis	= [ ("*", optofun "*"),
+			("/", optofun "/")]
+
 function, ifstmt :: ExpParser
 function = fname <.> (term <*)
              <@ (\ (x, y) ->  if length y == 0 then x 
@@ -285,7 +288,8 @@ term =	spaces(
 
 expr = gen term [	('i', [("==", optofun "==")]),
 					('r', [(":", cons)]),
-					('l', addis)
+					('l', addis),
+					('l', mulis)
 				]
 
 fundef :: Parser Char Fundef
