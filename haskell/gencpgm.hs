@@ -8,7 +8,7 @@ data Instn	=	PUSH Int | PUSHINT Int | PUSHGLOBAL String |
 				PUSHBOOL Bool | PUSHNIL | POP Int |
 				EVAL | UNWIND | MKAP | UPDATE Int | RETURN |
 				LABEL String | JUMP String | JFALSE String |
-				ADD | SUB | MUL | CONS | HEAD | TAIL | IF | EQU |
+				ADD | SUB | MUL | DIV | CONS | HEAD | TAIL | IF | EQU |
 				GLOBSTART String Int | PRINT | STOP
 
 instance Show Instn where
@@ -29,6 +29,7 @@ instance Show Instn where
 	show ADD				= "    ADD" ++ "\n"
 	show SUB				= "    SUB" ++ "\n"
 	show MUL				= "    MUL" ++ "\n"
+	show DIV				= "    DIV" ++ "\n"
 	show CONS				= "    CONS" ++ "\n"
 	show HEAD				= "    HEAD" ++ "\n"
 	show TAIL				= "    TAIL" ++ "\n"
@@ -42,24 +43,26 @@ gencpgm :: Program -> Code
 gencpgm (Prog fs e) = foldr gencfun (gencmain e) fs
 
 gencfun :: Fundef -> Code -> Code
-gencfun (Fun fname args body) code	= GLOBSTART fname (length args) : 
-										expinst body s (length args) 
+gencfun (Fun fname args body) code = GLOBSTART fname (length args) : 
+										expcode body var_position (length args) 
 											(UPDATE (length args + 1) : unwind_pop args code)
-	where	s name = fromJust (elemIndex name args) + 1
+	where var_position name = fromJust (elemIndex name args) + 1
+
 unwind_pop :: [String] -> Code -> Code
 unwind_pop [] code = UNWIND : code
 unwind_pop args code = POP (length args) : UNWIND : code
 
 gencmain :: Exp -> Code
-gencmain e = LABEL "MAIN" : expinst e (\x -> 0) 0 (EVAL : PRINT : STOP : builtins)
+gencmain e = LABEL "MAIN" : expcode e (\x -> 0) 0 (EVAL : PRINT : STOP : builtins)
 
-expinst :: Exp ->  (Var -> Int) -> Int -> Code -> Code
-expinst (App e1 e2) s d code = expinst e2 s d (expinst e1 s (d + 1) (MKAP : code))
-expinst (I i) s d code = PUSHINT i : code
-expinst (B b) s d code = PUSHBOOL b : code
-expinst (V v) s d code = PUSH (d - s v) : code
-expinst Nil s d code = PUSHNIL : code
-expinst (Fname f) s d code = PUSHGLOBAL f : code
+expcode :: Exp ->  (Var -> Int) -> Int -> Code -> Code
+expcode (App e1 e2) s d code	= expcode e2 s d (expcode e1 s (d + 1) (MKAP : code))
+expcode exp s d code			= expinst exp : code
+	where	expinst (I i)	= PUSHINT i 
+		expinst (B b)		= PUSHBOOL b
+		expinst (V v)		= PUSH (d - s v)
+		expinst Nil			= PUSHNIL
+		expinst (Fname f)	= PUSHGLOBAL f
 
 builtins :: Code
 builtins = concat (map builtin ["cons", "car", "if", "+", "-", "*", "=="])
@@ -68,6 +71,7 @@ builtin :: String -> Code
 --builtin "not"	= [GLOBSTART "not", EVAL, NEG, UPDATE 1, RETURN]
 builtin "cons"	= [GLOBSTART "cons" 2, CONS, UPDATE 1, RETURN]
 builtin "car"	= [GLOBSTART "car" 1, EVAL, HEAD, EVAL, UPDATE 1, UNWIND]
+builtin "cdr"	= [GLOBSTART "cdr" 1, EVAL, TAIL, EVAL, UPDATE 1, UNWIND]
 builtin "if"	= [	GLOBSTART "if" 3, 
 					PUSH 0,
 					EVAL,
@@ -84,22 +88,24 @@ builtin "if"	= [	GLOBSTART "if" 3,
 builtin "+" = binarybuiltin "+"
 builtin "-" = binarybuiltin "-"
 builtin "*" = binarybuiltin "*"
+builtin "/" = binarybuiltin "/"
 builtin "==" = binarybuiltin "=="
 
 binarybuiltin :: String -> Code
-binarybuiltin f = [ GLOBSTART f 2,
+binarybuiltin op = [ GLOBSTART op 2,
 					EVAL,
 					PUSH 1,
 					EVAL,
-					command f,
+					opcode op,
 					UPDATE 3,
 					POP 2,
 					UNWIND ]
-
-command "+" = ADD
-command "-" = SUB
-command "*" = MUL
-command "==" = EQU
+	where 
+	   opcode "+" = ADD
+	   opcode "-" = SUB
+	   opcode "*" = MUL
+	   opcode "/" = DIV
+	   opcode "==" = EQU
 
 main = do
 	input <- readFile "pfile"
