@@ -1,6 +1,10 @@
-import Parser2
 import Data.List
 import Data.Maybe
+
+data Program = Prog [Fundef] Exp deriving (Show,Eq)
+data Fundef = Fun String [String] Exp deriving (Show,Eq)
+data Exp = I Int | B Bool | V String | Nil | Fname String | App Exp Exp
+           deriving (Show,Eq)                            
 
 type Code = [Instn]
 
@@ -108,11 +112,3 @@ binarybuiltin op = [ GLOBSTART op 2,
 	   opcode "/" = DIV
 	   opcode "==" = EQU
 
-main = do
-	input <- readFile "pfile"
-	let
-		program = parse input
-	let
-		code = gencpgm program
-    --
-	print code
