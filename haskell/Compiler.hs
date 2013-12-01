@@ -1,10 +1,12 @@
+module Compiler where
+
 import Data.List
 import Data.Maybe
-
-data Program = Prog [Fundef] Exp deriving (Show,Eq)
-data Fundef = Fun String [String] Exp deriving (Show,Eq)
-data Exp = I Int | B Bool | V String | Nil | Fname String | App Exp Exp
-           deriving (Show,Eq)                            
+import Parser2 -- (Program, Fundef, Exp)
+--data Program = Prog [Fundef] Exp deriving (Show,Eq)
+--data Fundef = Fun String [String] Exp deriving (Show,Eq)
+--data Exp = I Int | B Bool | V String | Nil | Fname String | App Exp Exp
+--           deriving (Show,Eq)                            
 
 type Code = [Instn]
 
@@ -58,7 +60,7 @@ unwind_pop args code = UPDATE (length args + 1) : POP (length args) : UNWIND : c
 gencmain :: Exp -> Code
 gencmain e = LABEL "MAIN" : expcode e (\x -> 0) 0 (EVAL : PRINT : STOP : builtins)
 
-expcode :: Exp ->  (Var -> Int) -> Int -> Code -> Code
+expcode :: Exp ->  (String -> Int) -> Int -> Code -> Code
 expcode (App e1 e2) s d code	= expcode e2 s d (expcode e1 s (d + 1) (MKAP : code))
 expcode exp s d code			= expinst exp : code
 	where	
@@ -98,6 +100,7 @@ builtin "==" = binarybuiltin "=="
 
 binarybuiltin :: String -> Code
 binarybuiltin op = [ GLOBSTART op 2,
+					PUSH 1,
 					EVAL,
 					PUSH 1,
 					EVAL,
