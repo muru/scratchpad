@@ -1,7 +1,7 @@
 #! /bin/bash
 
 COUNT=1
-MAX=$((5*1024*1024*1024))
+MAX=$((5*1024*1024))
 i=1
 TIMEFMT='%U %S %E %P'
 
