@@ -25,3 +25,9 @@ The files grew in O(n<sup>2</sup>). If you notice, in each iteration:
 
     COUNT += i
 So `COUNT = i*(i+1)/2`.
+
+I posted an [answer](http://unix.stackexchange.com/a/153612/70524) based on the results.
+Some pics:
+
+![user-sys](http://i.stack.imgur.com/nws9a.png)
+![real](http://i.stack.imgur.com/SixMf.png)
