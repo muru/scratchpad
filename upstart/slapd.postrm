@@ -1,0 +1,69 @@
+#!/bin/sh
+
+set -e
+
+# Load debconf if available (might have been removed before purging
+# slapd)
+
+if [ -e "/usr/share/debconf/confmodule" ]; then
+  . /usr/share/debconf/confmodule
+fi
+
+# Check if the user wants the database removed on purging slapd
+remove_database_on_purge() {
+  db_get slapd/purge_database || RET=false
+  if [ "$RET" = "true" ]; then
+    return 0
+  else
+    return 1
+  fi
+}
+
+if [ "$1" = "purge" ]; then
+  echo -n "Removing slapd configuration... "
+  rm -f /etc/ldap/slapd.conf 2>/dev/null || true
+  rm -rf /etc/ldap/slapd.d 2>/dev/null || true
+  echo "done."
+
+  if remove_database_on_purge; then
+    echo -n "Purging OpenLDAP database... "
+    rm -rf /var/lib/ldap || true
+    echo done
+  fi
+fi
+
+# Automatically added by dh_makeshlibs
+if [ "$1" = "remove" ]; then
+	ldconfig
+fi
+# End automatically added section
+# Automatically added by dh_installinit
+if [ "$1" = "purge" ] ; then
+	update-rc.d slapd remove >/dev/null
+fi
+
+
+# In case this system is running systemd, we make systemd reload the unit files
+# to pick up changes.
+if [ -d /run/systemd/system ] ; then
+	systemctl --system daemon-reload >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installdebconf
+if [ "$1" = purge ] && [ -e /usr/share/debconf/confmodule ]; then
+	. /usr/share/debconf/confmodule
+	db_purge
+fi
+# End automatically added section
+# Automatically added by dh_apparmor
+if [ "$1" = "purge" ] && ! [ -e "/etc/apparmor.d/usr.sbin.slapd" ] ; then
+    rm -f "/etc/apparmor.d/disable/usr.sbin.slapd" || true
+    rm -f "/etc/apparmor.d/force-complain/usr.sbin.slapd" || true
+    rm -f "/etc/apparmor.d/local/usr.sbin.slapd" || true
+    rmdir /etc/apparmor.d/local 2>/dev/null || true
+fi
+# End automatically added section
+
+
+exit 0
+
