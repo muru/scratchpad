@@ -58,7 +58,7 @@ unwind_pop [] code = UPDATE 1 : UNWIND : code
 unwind_pop args code = UPDATE (length args + 1) : POP (length args) : UNWIND : code
 
 gencmain :: Exp -> Code
-gencmain e = LABEL "MAIN" : expcode e (\x -> 0) 0 (EVAL : PRINT : STOP : builtins)
+gencmain e = LABEL "MAIN" : expcode e (\x -> 0) 0 (EVAL : PRINT : STOP: builtins)
 
 expcode :: Exp ->  (String -> Int) -> Int -> Code -> Code
 expcode (App e1 e2) s d code	= expcode e2 s d (expcode e1 s (d + 1) (MKAP : code))
@@ -76,8 +76,8 @@ builtins = concat (map builtin ["cons", "head", "tail", "if", "null", "+", "-", 
 builtin :: String -> Code
 --builtin "not"	= [GLOBSTART "not", EVAL, NEG, UPDATE 1, RETURN]
 builtin "cons"	= [GLOBSTART "cons" 2, CONS, UPDATE 1, RETURN]
-builtin "head"	= [GLOBSTART "head" 1, EVAL, HEAD, EVAL, UPDATE 1, UNWIND]
-builtin "tail"	= [GLOBSTART "tail" 1, EVAL, TAIL, EVAL, UPDATE 1, UNWIND]
+builtin "head"	= [GLOBSTART "car" 1, EVAL, HEAD, EVAL, UPDATE 1, UNWIND]
+builtin "tail"	= [GLOBSTART "cdr" 1, EVAL, TAIL, EVAL, UPDATE 1, UNWIND]
 builtin "null"	= [GLOBSTART "null" 1, EVAL, PUSHNIL, EQU, UPDATE 1, UNWIND]
 builtin "if"	= [	GLOBSTART "if" 3, 
 					PUSH 0,

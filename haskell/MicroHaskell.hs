@@ -140,5 +140,5 @@ main = do
 	input <- readFile "pfile"
 	let
 		prog = parse input
-	putStr prog
+	putStr (prog ++ "\n")
 

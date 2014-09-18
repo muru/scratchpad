@@ -5,214 +5,370 @@ import Data.Char
 
 -------------------------------------------------------------------------------------------------
 ----------------------------------------------- Parser ------------------------------------------
+type Parser symbol result = [symbol] -> [([symbol], result)]
 
-type Parser symbol result = [symbol]->[([symbol],result)]
+symbol :: Eq s => s -> Parser s s
+--symbol _ []		= []
+--symbol a (x:xs) = [(xs, a)] |  a == x]
 
-charToNum c = (fromInteger.read) [c]
+token :: Eq s => [s] -> Parser s [s]
+--token k xs	| k == take n xs = [(drop n xs, k)]
+--			| otherwise = []
+--						where n = length k
+	
+satisfy :: (s -> Bool) -> Parser s s
+satisfy p []		= []
+satisfy p (x:xs)	= [(xs, x) | p x]
 
-symbol::Char->Parser Char Char
-symbol c [] = []
-symbol c (x:xs)| x==c = [(xs,c)] 
-               | otherwise = []
-                             
-satisfy::(a->Bool)->Parser a a
-satisfy p [] = []
-satisfy p (x:xs) | p x = [(xs,x)]
-                 | otherwise = []
+-- Ex 1
+symbol a x = satisfy (a == ) x
 
-succeed::a->Parser s a
-succeed x l = [(l,x)]
+epsilon :: Parser s ()
+--epsilon xs = [(xs, ())]
 
-
-token::Eq a=>[a]->Parser a [a]
-
-token k xs |k==(take n xs) = [((drop n xs),k)]  
-           |otherwise = []
-            where n = length k
-
-fail xs = []
+succeed :: r -> Parser s r
+succeed v xs = [(xs, v)]
 
 epsilon = succeed ()
 
-infixr 6 <*>,<*,*>
-infixr 5 <@
+fail' :: Parser s r
+fail' _ = []
+
+infixr 6 <.>
 infixr 4 <|>
 
-(<*>)::Parser s a->Parser s b->Parser s (a,b)
-(p1 <*> p2) xs = [(xs2,(v1,v2))|(xs1,v1)<-p1 xs,(xs2,v2)<-p2 xs1]
+(<.>) :: Parser s a -> Parser s b -> Parser s (a,b)
+(p1 <.> p2) xs = [(xs2, (v1, v2)) | (xs1, v1) <- p1 xs, 
+									(xs2, v2) <- p2 xs1]
 
-
-(<|>)::Parser s a->Parser s a->Parser s a
+(<|>) :: Parser s a -> Parser s a -> Parser s a
 (p1 <|> p2) xs = p1 xs ++ p2 xs
 
-(<@)::Parser s a -> (a->b)-> Parser s b
-(p <@ f) xs = [(xs,f v)|(xs,v)<-p xs] 
+spaces :: Parser Char a -> Parser Char a
+spaces = ( . dropWhile ( == ' '))
 
-(<*)::Parser s a->Parser s b->Parser s a 
-p1 <* p2 = p1 <*> p2 <@ fst
+just :: Parser s a -> Parser s a
+--just = (filter (null . fst) . )
+-- Ex 3
+just p x = [([], y) | ([], y) <- p x]
 
-(*>)::Parser s a->Parser s b->Parser s b
-p1 *> p2 = p1 <*> p2 <@ snd
+infixr 5 <@
 
-(<:*>)::Parser s a->Parser s [a]->Parser s [a]
-p1 <:*> p2 = p1 <*> p2 <@ listify 
+(<@) :: Parser s a -> (a -> b) -> Parser s b
+(p <@ f) xs = [(ys, f v) | (ys, v) <- p xs]
 
-listify (x,xs) = x:xs
+digit :: Parser Char Int
+digit	= satisfy isDigit <@ f
+		where f c = ord c - ord '0'
+		
+type DeterministicParser symbol result = [symbol] -> result
 
-zeroOrMore::Parser s a->Parser s [a]
-zeroOrMore p =  (p <:*> (zeroOrMore p)) <|> succeed [] 
-               
-oneOrMore::Parser s a->Parser s [a]
-oneOrMore p = p <:*> (zeroOrMore p)
+some :: Parser s a -> DeterministicParser s a
+some p = snd . head . just p
 
-option::Parser s a->Parser s [a]
-option p =   succeed [] <|> p <@ f  
-            where f x = [x]
+data Tree	= TNil
+			| Bin (Tree, Tree) deriving Show
 
-(<?@) ::Parser s [a]->(b,(a->b))->Parser s b
-p <?@ (no,yes) = p <@ f
-                 where f [] = no
-                       f [x]= yes x
+open_r	= symbol '('
+close_r	= symbol ')'
 
-digit::Parser Char Char
-digit = satisfy isDigit 
-alpha = satisfy isAlpha 
+infixr 6 <. , .>
 
-number::Num a => [Char]->[([Char],a)]
-number = ((oneOrMore digit) <@ (fromInteger.read))  
+(<.) :: Parser s a -> Parser s b -> Parser s a
+p <. q = p <.> q <@ fst
 
-determ p xs | null l = []
-            | otherwise = [head l]
-                       where l = p xs
+(.>) :: Parser s a -> Parser s b -> Parser s b
+p .> q = p <.> q <@ snd
 
-greedy = determ.zeroOrMore
+parens :: Parser Char Tree
+--parens =	( 
+--				symbol '('
+--			<.>	parens 
+--			<.> symbol ')'
+--			<.> parens
+--			)				<@ (\(_, (x, (_, y))) -> Bin (x, y)
+--			<|> epsilon <@ const TNil
+parens	=	(open_r .> parens <. close_r) <.> parens <@ Bin
+		<|> succeed TNil
 
-sp  = greedy (symbol ' ')
+nesting :: Parser Char Int 
+nesting =	(open_r .> nesting <. close_r) <.> nesting <@ f
+		<|> succeed 0
+		where f (a, b) = max (1 + a) b
 
-pack s1 p s2 = s1 *> p <* s2
+foldparens :: ((a, a) -> a) -> a -> Parser Char a
+foldparens f e	= p
+				where p = (open_r .> p <. close_r) <.> p <@ f
+						<|> succeed e
 
-paranthesized p = pack (symbol '(') p (symbol ')')
+many :: Parser s a -> Parser s [a]
+--many p	= p <.> many p <@ list
+--		<|> succeed []
+--		where list (x, xs) = x:xs
+-- Lambdas! Lambdas everywhere.
+many p	= p <.> many p <@ (\(x, xs) -> x:xs)
+		<|> epsilon <@ (\_ -> [])
 
-fractional = oneOrMore digit <@ (foldr f 0.0)
-             where f x y = (charToNum x + y)/10
+-- Ex 11
+many1 :: Parser s a -> Parser s [a]
+many1 p = p <.> many p <@ (\(x, xs) -> x:xs)
 
+natural :: Parser Char Int
+natural = many1 digit <@ foldl f 0
+		where f a b = a * 10 + b
 
-float = (number <*> 
-        (option (symbol '.' *> fractional) <?@ (0.0,id))) <@ uncurry (+)
-               
-listOf p s = p <:*> (zeroOrMore (s *> p)) <|> succeed []
+option :: Parser s a -> Parser s [a]
+option p	=	p		<@ (\x -> [x])
+			<|> epsilon <@ (\_ -> [])
 
-commaList p = listOf p (symbol ',')
+infixl 7 <*, <+, <?
+infixr 6 <:.>
 
-spsymbol c = symbol c <* sp
-chainr p s = (zeroOrMore (p <*> s)) <*> p <@ uncurry (flip (foldr f))
-             where f (x,op) y = x `op` y
+(<*) = many
+(<+) = many1
+(<?) = option
+p1 <:.> p2 = p1 <.> p2 <@ (\ (x, xs) -> (x:xs))
 
+pack :: Parser s a -> Parser s b -> Parser s c -> Parser s b
+pack s1 p s2 = s1 .> p <. s2
 
-chainl p s = p <*> (zeroOrMore (s <*> p)) <@ uncurry (foldl f) 
-                    where f x (op,y) = x `op` y 
+open_s = symbol '['
 
-name = (alpha <:*> greedy (alpha <|> digit)) 
+close_s = symbol ']'
 
-reservedWords = [ "if" , "else" , "null" , "head" , "tail" , "then"]
-identifier xs | l==[] = []
-              | ((snd (head l)) `elem` reservedWords)=[] 
-              | otherwise = l     
-                where l = name xs                                         
-type Fname = String
-type Var = String
+parenthesized p = pack open_r p close_r
+bracketed p = pack open_s p close_s
 
-data Program = Prog [Fundef] Exp deriving (Show,Eq)
-data Fundef = Fun String [String] Exp deriving (Show,Eq)
-data Exp = I Int | B Bool | V String | Nil | Fname String | App Exp Exp
-           deriving (Show,Eq)                            
+listOf :: Parser s a -> Parser s b -> Parser s [a]
+listOf p s = p <:.> ((s .> p) <*)  <|> succeed []
 
+commaList, normalList :: Parser Char a -> Parser Char [a]
+commaList p	= listOf p (token' ",")
 
----------------------Exp
-boolean = (token "True") <@ const True  <|> (token "False") <@ const False  
+normalList 	= bracketed . commaList . spaces
 
-sqrBracketed p = pack (symbol '[' <* sp)  p (sp *> symbol ']')
-commasp = (symbol ',') <* sp
-list::Parser Char Exp
-list = sqrBracketed((listOf lterm commasp) <@ foldr (\x y-> App (App (Fname "cons") x) y) Nil)
+-- Ex 12
+sequence' :: [Parser s a] -> Parser s [a]
+--sequence' [] = succeed []
+--sequence' (p:ps) = p <:.> sequence' ps
+sequence' = foldr (<:.>) (succeed [])
 
+choice :: [Parser s a] -> Parser s a
+--choice [] = fail'
+--choice (p:ps) = p <|> choice ps
+choice = foldr (<|>) fail'
 
+-- Ex 13
+--token k = sequence' (map symbol k)
+token = sequence' . map symbol
 
-headterm = headtoken *> factor <@ (App (Fname "car")) 
-tailterm = tailtoken *> factor <@ (App (Fname "cdr"))
+ap2 (op, y) = (`op` y)
 
-factor::Parser Char Exp
-factor = (number <@ I)
-         <|>
-         (boolean <@ B)
-         <|> headterm <|> tailterm
-         <|>
-         (identifier <@ (\x -> Fname x))
-         <|>
-         (identifier <@ V)
-         <|>list
-         <|>paranthesized expr
-appterm = chainl (sp *> factor) ((symbol ' ') <@ const (\x y -> App x y))
-         
+chainl :: Parser s a -> Parser s (a -> a -> a) -> Parser s a
+chainl p s = p <.> ((s <.> p) <*) <@ uncurry (foldl (flip ap2))
 
-sptoken t = determ (sp *> (token t) <* sp)
-headtoken = sptoken "car "
-tailtoken = sptoken "cdr "
-iftoken = sptoken "if "
-thentoken = sptoken "then "
-elsetoken =sptoken "else "
-eqtoken = sptoken "=="
-nulltoken =sptoken "null "
-plus = sptoken "+"
-minus = sptoken "-"
-mult = sptoken "*"
-slash = sptoken "/"
-constoken = sptoken ":"
-feqtoken = sptoken "="
+-- Ex 14
+ap1 (y, op) = (y `op`)
+chainr :: Parser s a -> Parser s (a -> a -> a) -> Parser s a
+chainr p s = ((p <.> s) <*) <.> p <@ uncurry (flip (foldr ap1))
 
-bterm = sp *> (chainl appterm ((mult <@ const (f "*") ) <|> (slash <@ const (f "/") )))
-aterm = sp *> (chainl bterm ((plus <@ const (f "+") ) <|> (minus <@ const (f "-") )))
-f op = \x y -> App (App (Fname op) x) y 
-lterm = sp *> (chainr aterm (constoken <@ const (f "cons")))
-              
-eqterm = sp*> lterm <*> (eqtoken  *> lterm ) <@ f
-         <|> nulltoken  *> lterm <@ (App (Fname "null"))
-         <|> lterm
-         where f (x,y) = App (App (Fname "==") x) y
+--(<@) :: Parser s a -> (a -> b) -> Parser s b
+--(p <@ f) xs = [(ys, f v) | (ys, v) <- p xs]
+infixl 5 <?@
+(<?@) :: Parser s [a] -> (b, (a -> b)) -> Parser s b
+p <?@ (no, yes) = p <@ f 
+		  where f x | length x == 0 = no
+					| length x == 1 = yes (head x)
 
-ifterm = (iftoken *> eqterm) <*> (thentoken *> expr) <*> (elsetoken *> expr) <@f
-         <|> eqterm 
-         where f (x1,(x2,x3)) = App (App (App (Fname "if") x1) x2) x3
-         
-expr=ifterm 
+-- Ex 15
+integer :: Parser Char Int
+--integer = ((symbol '-' <?) <?@ ((+), (\_ -> (-)))) 
+--			<.> natural 
+--		<@ (\(op, y) -> 0 `op` y)
+		--where	g (x, n)	| x == '+' = n
+		--					| x == '-' = 0 - n
+integer = ((symbol '-' <?) <?@ (id, const negate))
+			<.> natural
+		<@ (\(op, y) ->  op y) 
 
-----------------fundefs
+--ap1 (y, op) = (y `op`)
+--ap2 (op, y) = (`op` y)
+--chainr p s = ((p <.> s) <*) <.> p <@ uncurry (flip (foldr ap1))
 
-fargs = (symbol ' ') *> listOf (identifier) (symbol ' ') <|> succeed []
+ap3 (y, op) = (op y)
+ap4 (op, y) = (op y)
+chainr' :: Parser s a -> Parser s (a -> a -> a) -> Parser s a
+chainr' p s = q
+			where q = p <.> (((s <.> q) <?) <?@ (id, ap2))
+						<@ ap3
 
-fundef::Parser Char Fundef                                                   
-fundef = identifier <*> fargs  <*> (feqtoken *>  expr)	 <@ f
-          where f (x,(y,z)) = Fun x y z
-               
-               
+--chainl' :: Parser s a -> Parser s (a -> a -> a) -> Parser s a
+--chainl' p s = q
+--			where q = (((q <.> s) <?) <?@ (id, ap1)) <.> p
+--						<@ ap4
 
--- ---------------program
+first :: Parser a b -> Parser a b
+first p xs	| null r	= []
+			| otherwise = [head r]
+			where r		= p xs
 
-prog::Parser Char Program
-prog =  (zeroOrMore (fundef <* (symbol '\n'))) <*>  expr <@f
-        where f (x,y) = Prog x y
-              
-parse pgm = correctProgram (snd (head (prog pgm)))
+greedy	= first . many
+greedy1 = first . many1
 
--- For the expression part in all fundefs, if there exists "Fname argname" such that argname is a parameter name then replace "Fname argname" by "V argname"
+compulsion = first . option
 
-correctProgram (Prog defs exp) = Prog (map (fundefCorrect []) defs) exp
+type Op a = ([Char], a -> a -> a)
+genl :: [Op a] ->  Parser Char a ->  Parser Char a
+genl ops p = chainl p (choice (map f ops))
+		where f (t, e) = token' t <@ const e
 
-fundefCorrect _ (Fun fname par exp) = Fun fname par (fundefCorrectExp par exp)
-fundefCorrectExp par (App e1 e2) = App (fundefCorrectExp par e1) (fundefCorrectExp par e2)
-fundefCorrectExp par (Fname argname) | argname `elem` par = V argname
-                                     | otherwise = Fname argname
-fundefCorrectExp _ x = x    
+genop :: (Char, [Op a]) -> Parser Char a -> Parser Char a
+genop (a, op) p	= 
+		chain p (choice (map 
+					(\ (t, e)-> token' t <@ const e) op))  
+			where	
+				chain	| a == 'r' = chainr
+						| a == 'l' = chainl
+						| a == 'i' = \ pr s -> pr <|> (pr <.> s <.> pr <@ \ (a, (f, b)) -> f a b)
+
+gen :: Parser Char a -> [(Char, [Op a])] -> Parser Char a
+gen = foldr genop
+
+token' x  = spaces (token x)
+
+----------------------- MicroHaskell begin --------------------
+
+type Fname		= String
+type Var		= String
+
+data Program	= Prog [Fundef] Exp deriving Show
+data Fundef		= Fun String [String] Exp deriving Show
+data Exp		= I Int | V Var | B Bool | Nil |
+				  Fname String |
+				  App Exp Exp deriving Show
+				  
+type ExpParser	= Parser Char Exp
+
+keywords = ["if",
+			"then",
+			"else",
+			"car",
+			"cdr",
+			"null"]
+
+----------------------- Helper functions --------------------
+pair2Exp :: (Exp, Exp) -> Exp
+pair2Exp (x, y) = App x y
+
+isWord, isStartWord :: Char -> Bool
+isWord x		= isAlphaNum x || (x ==  '_')
+isStartWord x	= isAlpha x || (x ==  '_')
+
+isKeyword :: [ Char ] -> Bool
+isKeyword x		= x `elem` keywords
+
+word, name :: Parser Char [ Char ]
+word = (satisfy isStartWord <:.> (satisfy (isWord) <*))
+name x = [(a, b) |	(a, b) <- (spaces (first word) x), 
+					not (isKeyword b)]
+
+funargs :: [Exp] -> Exp
+funargs [x]		= x
+funargs (x:xs)	= foldl (\ x y -> App x y) x xs
+
+optofun :: [Char] -> Exp -> Exp -> Exp
+optofun f x y = App (App (Fname f) x) y
+
+args :: Parser Char [[ Char ]]
+args	= name <:.> (name <*) <|> succeed []
+
+newlines :: Parser Char [ Char ]
+newlines = (spaces (symbol '\n') <*)
+-------------------------------------------------------------
+-------------------------------------------------------------
+
+---------------------- Constant Terms -----------------------
+intlit, boollit, nil, constant :: ExpParser
+intlit	= integer <@ I
+
+boollit	= ((token' "True" <|> token' "False") <@ f)
+		where f x	| x == "True"	= B True
+					| x == "False"	= B False
+
+nil	= token' "[" <.> token' "]" <@ f
+		where f _ = Nil
+
+constant = first (intlit <|> boollit <|> nil)
+-------------------------------------------------------------
+-------------------------------------------------------------
+
+------------------------- User terms ------------------------
+variable, fname :: ExpParser
+variable = name <@ V 
+
+fname = name <@ Fname 
+-------------------------------------------------------------
+-------------------------------------------------------------
+
+-------------------- Grammar Constructs ---------------------
+cons = optofun "cons"
+
+addis	= [ ("+", optofun "+"),
+			("-", optofun "-")]
+multis	= [ ("*", optofun "*"),
+			("/", optofun "/")]
+
+function, ifstmt :: ExpParser
+function = fname <.> (term <*)
+             <@ (\ (x, y) ->  if length y == 0 then x 
+								else funargs (x:y))
+
+ifstmt = ((token' "if" .> expr 
+				<@ (\ y ->  App (Fname "If") y))
+		<.> token' "then" .> expr 
+				<@ pair2Exp)
+		<.> token' "else" .> expr
+				<@ pair2Exp
+
+car, cdr, nul :: ExpParser
+car = token' "car" .> term <@ (\ x -> App (Fname "car") x)
+cdr = token' "cdr" .> term <@ (\ x -> App (Fname "cdr") x)
+nul = token' "null" .> term <@ (\ x -> App (Fname "null") x)
+
+term, expr :: ExpParser
+term =	spaces(	
+			constant 
+		<|> variable
+		<|> ifstmt
+		<|> car
+		<|> cdr
+		<|> nul
+		<|> function
+		<|> ((normalList expr) <@ foldr cons Nil)
+		<|> parenthesized expr
+		)
+
+expr = gen term [	('i', [("==", optofun "==")]),
+					('r', [(":", cons)]),
+					('l', addis),
+					('l', multis)
+				]
+
+fundef :: Parser Char Fundef
+fundef	= (name <.> args <.> token' "=" .> expr) 
+			<@ \ (f, (as, e)) ->  Fun f as e
+
+funs :: Parser Char [ Fundef ]
+funs = (listOf fundef newlines) <. token' "\n"
+
+program :: Parser Char Program
+program = funs <.> expr <. newlines <@ \ (fs, e) ->  Prog fs e
+
+----------------------- Parser output -------------------------
+
+ptext (Prog fs e) = unlines ((map show fs) ++ [show e])
+
+parse x = (some program x) 
 
 -------------------------------------------------------------------------------------------------
 ------------------------------------------- Compiler --------------------------------------------
@@ -352,7 +508,7 @@ type Output = [String]
 type State = (Stack, Heap, Code, Dump, Globals, Output)
 
 run :: Code -> Output
-run code = reverse output
+run code = output
 	where
 		(main, func) = extract_main code
 		(init_heap, globals) = find_globals func

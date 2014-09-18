@@ -1,3 +1,4 @@
-f x y z = y
-f 5 6 7
+append xs ys = if (null xs) then ys else (car xs:(append (cdr xs) ys))
+reverse xs = if (null xs) then xs else (append (reverse (cdr xs)) (car xs))
+append (append [4,5] [1,2]) [3,6]
 
