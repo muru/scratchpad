@@ -24,5 +24,8 @@ such as 10m and 2h.
 To set them, create `/etc/default/idle-killer` and set the variables in it. The file is sourced,
 so `bash` syntax can be used.
 
-I haven't added a way to excclude users from this yet.
+I haven't added a way to exclude users from this yet.
+
+# Logging
+The script logs to `syslog` using the `IDLEKILLER` tag.
 
