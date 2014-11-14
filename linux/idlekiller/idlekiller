@@ -10,7 +10,7 @@ TIMEOUT=5s
 IDLE_MESSAGE="You have been idle for more than $(($IDLE / 60)) minutes. \
 You will be logged out in $GRACE if no activity is detected."
 
-[ -f /etc/default/idle-killer ] && . /etc/default/idle-killer
+[ -f /etc/default/idlekiller ] && . /etc/default/idlekiller
 
 declare -gA watched_users
 declare -gA idle_time
