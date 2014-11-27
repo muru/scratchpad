@@ -30,9 +30,9 @@ for (opt, val) in optlist:
         repeat = True
 
 if repeat:
-    mix = itertools.product
+    mix = lambda x, y : itertools.product(x, repeat=y)
 else:
-    mix = itertools.permutations
+    mix = lambda x, y : itertools.permutations(x, y)
 
 if len (args) == 1:
     in_file = sys.stdin
