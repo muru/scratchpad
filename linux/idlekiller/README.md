@@ -4,11 +4,11 @@ Install `xprintidle`:
 
     sudo apt-get install xprintidle
 
-Copy the script to `/usr/bin/idle-killer.sh`, and the Upstart file to `/etc/init/idle-killer.conf`.
+Copy the script to `/usr/bin/idlekiller`, and the Upstart file to `/etc/init/idlekiller.conf`.
 
 Start the Upstart service:
 
-	sudo service idle-killer start
+	sudo service idlekiller start
 
 # Configuration
 It doesn't support many options now. :)
@@ -21,8 +21,11 @@ such as 10m and 2h.
 - The grace period after the warning is shown, using the `GRACE` variable. Also passed to `sleep`.
 - The warning message using the `IDLE_MESSAGE` variable.
 
-To set them, create `/etc/default/idle-killer` and set the variables in it. The file is sourced,
+To set them, create `/etc/default/idlekiller` and set the variables in it. The file is sourced,
 so `bash` syntax can be used.
 
-I haven't added a way to excclude users from this yet.
+I haven't added a way to exclude users from this yet.
+
+# Logging
+The script logs to `syslog` using the `IDLEKILLER` tag.
 
