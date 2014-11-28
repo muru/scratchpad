@@ -39,7 +39,7 @@ if len (args) == 1:
 else:
     in_file = open (args[1])
 
-phrases = [ line.strip () for line in in_file.readlines () ]
+phrases = [ line.strip () for line in in_file ]
 
 for i in range (min_depth, max_depth + 1):
     passwords = mix (phrases, i)
