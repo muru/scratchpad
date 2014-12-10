@@ -54,8 +54,8 @@ function build (block, source1, source2, sources, mixtures)
 	}
 
 	data[$1]++
-	if ($2 == "source1") {source1 = $3}
-	if ($2 == "source2") {source2 = $3}
+	if ($2 == "source1") {source1 = $3; next}
+	if ($2 == "source2") {source2 = $3; next}
 	if ($2 == "mixture")
 	{
 		mixtures[$3]++ 
